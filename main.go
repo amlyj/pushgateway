@@ -32,13 +32,14 @@ import (
 
 	"github.com/prometheus/pushgateway/handler"
 	"github.com/prometheus/pushgateway/storage"
+	"github.com/prometheus/pushgateway/task"
 )
 
 var (
 	showVersion         = flag.Bool("version", false, "Print version information.")
 	listenAddress       = flag.String("web.listen-address", ":9091", "Address to listen on for the web interface, API, and telemetry.")
 	metricsPath         = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
-	persistenceFile     = flag.String("persistence.file", "", "File to persist metrics. If empty, metrics are only kept in memory.")
+	persistenceFile     = flag.String("persistence.file", "./data", "File to persist metrics. If empty, metrics are only kept in memory.")
 	persistenceInterval = flag.Duration("persistence.interval", 5*time.Minute, "The minimum interval at which to write out the persistence file.")
 )
 
@@ -107,6 +108,7 @@ func main() {
 		log.Fatal(err)
 	}
 	go interruptHandler(l)
+	task.StartClear(ms, *listenAddress)
 	err = (&http.Server{Addr: *listenAddress, Handler: r}).Serve(l)
 	log.Errorln("HTTP server stopped:", err)
 	// To give running connections a chance to submit their payload, we wait
