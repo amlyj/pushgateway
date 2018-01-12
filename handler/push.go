@@ -35,6 +35,7 @@ import (
 	dto "github.com/prometheus/client_model/go"
 
 	"github.com/prometheus/pushgateway/storage"
+	"strconv"
 )
 
 const (
@@ -207,6 +208,12 @@ func LegacyPush(
 				return
 			}
 			now := time.Now()
+			if r.FormValue("time") != "" {
+				theTimeStamp, err := strconv.ParseInt(r.FormValue("time"), 10, 64)
+				if err == nil {
+					now = time.Unix(theTimeStamp, 0)
+				}
+			}
 			addPushTimestamp(metricFamilies, now)
 			sanitizeLabels(metricFamilies, labels)
 			ms.SubmitWriteRequest(storage.WriteRequest{
