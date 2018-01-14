@@ -26,13 +26,13 @@ func loopMetrics(ms storage.MetricStore, listenAddress string) {
 	}
 
 	for {
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 30)
 		MetricGroups := ms.GetMetricFamiliesMap()
 		for _, metricGroup := range MetricGroups {
 			job = metricGroup.Labels["job"]
 			instance = metricGroup.Labels["instance"]
 			timeStamp = metricGroup.Metrics["push_time_seconds"].Timestamp.String()
-			if ! validateState(timestampToUnix(timeStamp), time.Now().Unix()) {
+			if ! validateState(timestampToUnix(timeStamp), time.Now().Unix()) && len(metricGroup.Metrics) > 1 {
 				fakePut(job, instance, listenAddress, timeStamp)
 			}
 		}
@@ -55,13 +55,12 @@ func fakePut(job string, instance string, listenAddress string, timeStamp string
 		return
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("update job state err: ", err)
 		return
 	}
 
-	fmt.Println(string(body))
 }
 
 func timestampToUnix(s string) int64 {
@@ -75,10 +74,6 @@ func timestampToTime(s string) time.Time {
 	loc, _ := time.LoadLocation("Local")
 	theTime, _ := time.ParseInLocation(timeLayout, strTime, loc)
 	return theTime
-}
-
-func unixToTime(timestamp int64) time.Time {
-	return time.Unix(timestamp, 0)
 }
 
 func validateState(t1, t2 int64) bool {
