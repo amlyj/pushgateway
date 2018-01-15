@@ -7,6 +7,7 @@ import (
 	"strings"
 	"net/http"
 	"io/ioutil"
+	"github.com/prometheus/common/log"
 )
 
 // start clear task
@@ -40,24 +41,31 @@ func loopMetrics(ms storage.MetricStore, listenAddress string) {
 }
 
 func fakePut(job string, instance string, listenAddress string, timeStamp string) {
-	url := fmt.Sprintf("http://127.0.0.1%s/metrics/jobs/%s/instances/%s?time=%d",
-		listenAddress, job, instance, timestampToUnix(timeStamp))
+	var (
+		url              = "http://127.0.0.1%s/metrics/jobs/%s/instances/%s?time=%d"
+		contentTypeName  = "Content-Type"
+		contentTypeValue = "application/x-www-form-urlencoded"
+		errMsg           = "clear timeout instance metrics err: "
+		requestData      = ""
+	)
+
+	url = fmt.Sprintf(url, listenAddress, job, instance, timestampToUnix(timeStamp))
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPut, url, strings.NewReader(""))
+	req, err := http.NewRequest(http.MethodPut, url, strings.NewReader(requestData))
 	if err != nil {
-		fmt.Println("update job state err: ", err)
+		log.Errorln(errMsg, err)
 		return
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set(contentTypeName, contentTypeValue)
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("update job state err: ", err)
+		log.Errorln(errMsg, err)
 		return
 	}
 	defer resp.Body.Close()
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("update job state err: ", err)
+		log.Errorln(errMsg, err)
 		return
 	}
 
